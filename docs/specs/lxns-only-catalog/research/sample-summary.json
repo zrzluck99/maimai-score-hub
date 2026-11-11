@@ -1,0 +1,14 @@
+{
+  "source": "https://maimai.lxns.net/api/v0/maimai/song/list?version=25500&notes=true",
+  "sha256": "3947e733a125537f927f1c2433351a653849bacae752931e42e6a17cdf32a405",
+  "song_count": 1360,
+  "normalized_record_count": 1421,
+  "chart_count": 5623,
+  "duplicate_record_ids": [],
+  "duplicate_cids": [],
+  "song_version_exact_lookup_misses": 1086,
+  "unmapped_chart_major_versions": [],
+  "both_standard_dx_count": 61,
+  "utage_count": 65,
+  "buddy_chart_count": 16
+}

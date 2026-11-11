@@ -1,3 +1,7 @@
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import sharp from 'sharp';
 import { CoverService } from './cover.service';
 
 type TestableCoverService = {
@@ -27,6 +31,7 @@ function fetchInputUrl(input: Parameters<typeof fetch>[0]): string {
 }
 
 describe('CoverService incremental sync', () => {
+  afterEach(() => jest.restoreAllMocks());
   it('skips downloading when both local variants already exist', async () => {
     const service = new CoverService({} as never);
     const testable = service as unknown as TestableCoverService;
@@ -72,7 +77,7 @@ describe('CoverService incremental sync', () => {
       .spyOn(globalThis, 'fetch')
       .mockImplementation((input) => {
         const url = fetchInputUrl(input);
-        if (url.includes('/11597.png')) {
+        if (url.includes('/1597.png')) {
           return Promise.resolve(new Response(source, { status: 200 }));
         }
         if (url.includes('/111597.png')) {
@@ -93,9 +98,9 @@ describe('CoverService incremental sync', () => {
     await expect(
       testable.fetchCoverSourceBuffer('111597', toDivingFishId, toLxnsId),
     ).resolves.toEqual(Buffer.from(source));
-    expect(toDivingFishId).toHaveBeenCalledWith('11597');
+    expect(toDivingFishId).not.toHaveBeenCalled();
     expect(fetchSpy).toHaveBeenCalledWith(
-      'https://www.diving-fish.com/covers/11597.png',
+      'https://assets2.lxns.net/maimai/jacket/1597.png',
       { signal: undefined },
     );
   });
@@ -108,7 +113,7 @@ describe('CoverService incremental sync', () => {
       .spyOn(globalThis, 'fetch')
       .mockImplementation((input) => {
         const url = fetchInputUrl(input);
-        if (url.includes('/851.png!webp')) {
+        if (url.includes('/851.png')) {
           return Promise.resolve(new Response(source, { status: 200 }));
         }
         return Promise.resolve(new Response(null, { status: 404 }));
@@ -122,8 +127,39 @@ describe('CoverService incremental sync', () => {
       testable.fetchCoverSourceBuffer('100851', toDivingFishId, toLxnsId),
     ).resolves.toEqual(Buffer.from(source));
     expect(fetchSpy).toHaveBeenCalledWith(
-      'https://assets.lxns.net/maimai/jacket/851.png!webp',
+      'https://assets2.lxns.net/maimai/jacket/851.png',
       { signal: undefined },
     );
   });
+});
+
+it('keeps validated LXNS image files after an invalid refresh', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'lxns-cover-test-'));
+  const service = new CoverService({} as never);
+  Object.defineProperty(service, 'baseDir', { value: directory });
+  const writer = service as unknown as {
+    saveCoverVariantsFromBuffer(id: string, data: Buffer): Promise<boolean>;
+  };
+  try {
+    const source = await sharp({
+      create: { width: 2, height: 2, channels: 3, background: '#ffffff' },
+    })
+      .png()
+      .toBuffer();
+    expect(await writer.saveCoverVariantsFromBuffer('30', source)).toBe(true);
+    const before = await readFile(join(directory, '00030.png'));
+    expect(
+      await writer.saveCoverVariantsFromBuffer(
+        '30',
+        Buffer.from('invalid image'),
+      ),
+    ).toBe(false);
+    expect(await readFile(join(directory, '00030.png'))).toEqual(before);
+    expect(
+      (await sharp(await readFile(join(directory, '00030.webp'))).metadata())
+        .format,
+    ).toBe('webp');
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
 });

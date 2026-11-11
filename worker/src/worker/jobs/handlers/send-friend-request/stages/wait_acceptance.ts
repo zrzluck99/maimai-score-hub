@@ -1,3 +1,4 @@
+import { retainFriends } from "../../../../../common/friend-policy.ts";
 import type { JobExecutionContext } from "../../index.ts";
 import { TIMEOUTS } from "../../../../../common/maimai/constants.ts";
 
@@ -74,7 +75,7 @@ export async function waitAcceptance(ctx: JobExecutionContext): Promise<void> {
   const waitStartedAt = getWaitAcceptanceStartedAt(ctx);
   const elapsed = Date.now() - waitStartedAt.getTime();
   if (elapsed > TIMEOUTS.friendAcceptWait) {
-    cancelRequestAfterAcceptanceTimeout(ctx);
+    if (!retainFriends()) cancelRequestAfterAcceptanceTimeout(ctx);
     throw new Error("等待好友接受请求超时");
   }
 

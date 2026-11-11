@@ -50,6 +50,7 @@ import { DxnetAssignmentMutexService } from './dxnet-assignment-mutex.service';
 import { DxnetBotAssignmentBusyException } from '../dxnet-job.exceptions';
 import type { BotStatus } from '../../bots/services/bot-status.service';
 import { MusicService } from '../../music/services/music.service';
+import { retainFriends } from '../../../common/friend-policy';
 
 export interface CreateDxnetJobInput {
   friendCode: string;
@@ -337,7 +338,13 @@ export class JobService {
         botUserFriendCode,
         async ({ assertActive }) => {
           assertActive();
-          await this.assertEffectiveFriendCapacity(botUserFriendCode, id);
+          await this.assertEffectiveFriendCapacity(
+            botUserFriendCode,
+            id,
+            false,
+            input.friendCode,
+            jobType === 'send_friend_request',
+          );
           assertActive();
           return persist();
         },
@@ -492,11 +499,39 @@ export class JobService {
     return candidate.friendCode;
   }
 
-  private resolveV2FriendInteraction(
+  private async resolveV2FriendInteraction(
     input: CreateDxnetJobInput,
     healthyBots: BotStatus[],
     now: Date,
-  ): V2Assignment {
+  ): Promise<V2Assignment> {
+    if (retainFriends()) {
+      const botFriendCodes = healthyBots
+        .map((bot) => bot.friendCode)
+        .filter(
+          (code) =>
+            !input.botUserFriendCode || code === input.botUserFriendCode,
+        );
+      const existingFriend = await this.friendship.resolveFreshSnapshotBot({
+        friendCode: input.friendCode,
+        botFriendCodes,
+        now,
+      });
+      const existing =
+        existingFriend ??
+        ((input.jobType ?? 'send_friend_request') === 'send_friend_request'
+          ? await this.friendship.resolveRetainedPendingBot(
+              input.friendCode,
+              botFriendCodes,
+            )
+          : null);
+      if (existing) {
+        return {
+          assignmentMode: 'pinned',
+          botUserFriendCode: existing,
+          cabinetStatus: 'not_required',
+        };
+      }
+    }
     const requested = input.botUserFriendCode
       ? healthyBots.find((bot) => bot.friendCode === input.botUserFriendCode)
       : null;
@@ -668,7 +703,20 @@ export class JobService {
     botFriendCode: string,
     currentJobId: string,
     workerAssignment = false,
+    friendCode?: string | null,
+    reusePendingRequest = false,
   ): Promise<void> {
+    if (
+      retainFriends() &&
+      friendCode &&
+      ((await this.friendship.hasRetainedFriend(botFriendCode, friendCode)) ||
+        (reusePendingRequest &&
+          (await this.friendship.resolveRetainedPendingBot(friendCode, [
+            botFriendCode,
+          ]))))
+    ) {
+      return;
+    }
     const bot = await this.botStatus.getByFriendCode(botFriendCode);
     if (!bot || bot.friendCount === null) {
       if (workerAssignment) {
@@ -867,6 +915,8 @@ export class JobService {
             botFriendCode,
             existing.id,
             true,
+            existing.friendCode,
+            existing.jobType === 'send_friend_request',
           );
           assertActive();
           return mutate();
@@ -910,6 +960,21 @@ export class JobService {
       throw botIneligible('allowlist');
     }
     if (this.isRelationshipOwning(existing)) {
+      if (
+        retainFriends() &&
+        existing.friendCode &&
+        ((await this.friendship.hasRetainedFriend(
+          botFriendCode,
+          existing.friendCode,
+        )) ||
+          (existing.jobType === 'send_friend_request' &&
+            (await this.friendship.resolveRetainedPendingBot(
+              existing.friendCode,
+              [botFriendCode],
+            ))))
+      ) {
+        return;
+      }
       this.assertV2RelationshipEligibility(existing, bot);
     }
   }

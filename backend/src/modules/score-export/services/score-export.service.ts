@@ -1,3 +1,4 @@
+import { projectCatalogRating } from '../../../common/prober/lxns/catalog-rating';
 import {
   BadRequestException,
   Injectable,
@@ -490,7 +491,12 @@ export class ScoreExportService {
     scores: SyncScore[],
     musicMap: ReadonlyMap<string, MusicRow>,
   ): number {
-    return Math.round(buildRatingSummary(scores, musicMap)?.totalSum ?? 0);
+    return Math.round(
+      buildRatingSummary(
+        projectCatalogRating(scores, [...musicMap.values()]),
+        musicMap,
+      )?.totalSum ?? 0,
+    );
   }
 
   async generateImagesForFriendCode(
@@ -542,7 +548,12 @@ export class ScoreExportService {
       }
     }
 
-    return { scores, musics, musicMap, chartMap };
+    return {
+      scores: projectCatalogRating(scores, musics),
+      musics,
+      musicMap,
+      chartMap,
+    };
   }
 
   private buildCompactCard(

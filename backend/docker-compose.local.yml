@@ -1,0 +1,46 @@
+# Reuses the existing local MongoDB and Redis containers on mai-local-network.
+name: mai-local
+services:
+  backend:
+    image: mai-score-hub-backend:local
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    stop_grace_period: 60s
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 9050
+      MONGO_HOST: mai-test-mongo
+      MONGO_PORT: 27017
+      MONGO_DB: maimai_web
+      MONGO_USER: ''
+      MONGO_PASSWORD: ''
+      REDIS_URL: ''
+      REDIS_HOST: mai-test-redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ''
+      LXNS_GAME_VERSION: 25500
+      ALIAS_SYNC_ON_STARTUP: 'true'
+      OBSERVABILITY_ENABLED: 'false'
+      BACKEND_LOG_CLICKHOUSE_ENABLED: 'false'
+      TRUST_PROXY_HOPS: 0
+    ports:
+      - '127.0.0.1:9050:9050'
+    volumes:
+      - ./covers:/app/backend/covers
+    networks:
+      - local
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9050/api/v1/health']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+networks:
+  local:
+    external: true
+    name: mai-local-network

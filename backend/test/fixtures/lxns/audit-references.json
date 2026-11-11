@@ -1,0 +1,531 @@
+{
+  "oldCatalog": [
+    {
+      "id": "30",
+      "source": "lxns",
+      "sourceSongId": 30,
+      "sourceMetadata": {
+        "genre": "maimai",
+        "version": 10000,
+        "locked": false,
+        "releaseDate": "2019-12-05"
+      },
+      "title": "ネコ日和。",
+      "type": "standard",
+      "artist": "Kai/能登有沙",
+      "category": "舞萌",
+      "bpm": 171,
+      "version": "maimai",
+      "versionCode": 10000,
+      "isNew": true,
+      "disabled": false,
+      "locked": false,
+      "releaseDate": "2019-12-05",
+      "rights": null,
+      "charts": [
+        {
+          "cid": "30_0",
+          "difficulty": 0,
+          "level": "6",
+          "detailLevel": 6,
+          "charter": "-",
+          "notes": {
+            "total": 177,
+            "tap": 162,
+            "hold": 4,
+            "slide": 7,
+            "touch": 0,
+            "break": 4
+          },
+          "versionCode": 10000,
+          "releaseDate": "2019-12-05",
+          "locked": false
+        },
+        {
+          "cid": "30_1",
+          "difficulty": 1,
+          "level": "7+",
+          "detailLevel": 7.9,
+          "charter": "-",
+          "notes": {
+            "total": 241,
+            "tap": 210,
+            "hold": 23,
+            "slide": 4,
+            "touch": 0,
+            "break": 4
+          },
+          "versionCode": 10000,
+          "releaseDate": "2019-12-05",
+          "locked": false
+        },
+        {
+          "cid": "30_2",
+          "difficulty": 2,
+          "level": "8+",
+          "detailLevel": 8.8,
+          "charter": "譜面-100号",
+          "notes": {
+            "total": 281,
+            "tap": 259,
+            "hold": 4,
+            "slide": 10,
+            "touch": 0,
+            "break": 8
+          },
+          "versionCode": 10000,
+          "releaseDate": "2019-12-05",
+          "locked": false
+        },
+        {
+          "cid": "30_3",
+          "difficulty": 3,
+          "level": "12+",
+          "detailLevel": 1,
+          "charter": "ニャイン",
+          "notes": {
+            "total": 346,
+            "tap": 283,
+            "hold": 36,
+            "slide": 11,
+            "touch": 0,
+            "break": 16
+          },
+          "versionCode": 10000,
+          "releaseDate": "2019-12-05",
+          "locked": false
+        }
+      ],
+      "catalogRevision": "e8504abc4f38e635737bb1c57aa9101ad1bc27a27a8de9c43209748c32407c8d",
+      "catalogVersion": "ce740db16af80a4aba486bee2742e05c44dd8c03e03239a4216897a8fba6f34e",
+      "gameVersion": 25500,
+      "sync": {
+        "createdAt": "2026-11-11T05:32:10.273Z",
+        "updatedAt": "2026-11-11T05:32:10.273Z",
+        "lastSyncedAt": "2026-11-11T05:32:10.273Z"
+      }
+    },
+    {
+      "id": "10030",
+      "source": "lxns",
+      "sourceSongId": 30,
+      "sourceMetadata": {
+        "genre": "maimai",
+        "version": 10000,
+        "locked": false,
+        "releaseDate": "2019-12-05"
+      },
+      "title": "ネコ日和。",
+      "type": "dx",
+      "artist": "Kai/能登有沙",
+      "category": "舞萌",
+      "bpm": 171,
+      "version": "舞萌DX 2026",
+      "versionCode": 25500,
+      "isNew": true,
+      "disabled": false,
+      "locked": true,
+      "releaseDate": "2026-06-10",
+      "rights": null,
+      "charts": [
+        {
+          "cid": "10030_0",
+          "difficulty": 0,
+          "level": "2",
+          "detailLevel": 2,
+          "charter": "",
+          "notes": {
+            "total": 126,
+            "tap": 97,
+            "hold": 11,
+            "slide": 6,
+            "touch": 4,
+            "break": 8
+          },
+          "versionCode": 25500,
+          "releaseDate": "2026-06-10",
+          "locked": true
+        },
+        {
+          "cid": "10030_1",
+          "difficulty": 1,
+          "level": "6",
+          "detailLevel": 6.5,
+          "charter": "",
+          "notes": {
+            "total": 218,
+            "tap": 162,
+            "hold": 12,
+            "slide": 6,
+            "touch": 28,
+            "break": 10
+          },
+          "versionCode": 25500,
+          "releaseDate": "2026-06-10",
+          "locked": true
+        },
+        {
+          "cid": "10030_2",
+          "difficulty": 2,
+          "level": "9",
+          "detailLevel": 9.5,
+          "charter": "Luxizhel",
+          "notes": {
+            "total": 319,
+            "tap": 216,
+            "hold": 38,
+            "slide": 14,
+            "touch": 21,
+            "break": 30
+          },
+          "versionCode": 25500,
+          "releaseDate": "2026-06-10",
+          "locked": true
+        },
+        {
+          "cid": "10030_3",
+          "difficulty": 3,
+          "level": "13+",
+          "detailLevel": 13.7,
+          "charter": "サファ太",
+          "notes": {
+            "total": 631,
+            "tap": 417,
+            "hold": 8,
+            "slide": 91,
+            "touch": 41,
+            "break": 74
+          },
+          "versionCode": 25500,
+          "releaseDate": "2026-06-10",
+          "locked": true
+        }
+      ],
+      "catalogRevision": "e8504abc4f38e635737bb1c57aa9101ad1bc27a27a8de9c43209748c32407c8d",
+      "catalogVersion": "ce740db16af80a4aba486bee2742e05c44dd8c03e03239a4216897a8fba6f34e",
+      "gameVersion": 25500,
+      "sync": {
+        "createdAt": "2026-11-11T05:32:10.273Z",
+        "updatedAt": "2026-11-11T05:32:10.273Z",
+        "lastSyncedAt": "2026-11-11T05:32:10.273Z"
+      }
+    },
+    {
+      "id": "11639",
+      "source": "lxns",
+      "sourceSongId": 1639,
+      "sourceMetadata": {
+        "genre": "POPSアニメ",
+        "version": 24006,
+        "locked": false,
+        "releaseDate": "2025-03-05"
+      },
+      "title": "Burn My Soul",
+      "type": "dx",
+      "artist": "She is Legend",
+      "category": "流行&动漫",
+      "bpm": 180,
+      "version": "舞萌DX 2024",
+      "versionCode": 24000,
+      "isNew": false,
+      "disabled": true,
+      "locked": false,
+      "releaseDate": "2025-03-05",
+      "rights": "©WFS Developed by WRIGHT FLYER STUDIOS ©VISUAL ARTS/Key",
+      "charts": [
+        {
+          "cid": "11639_0",
+          "difficulty": 0,
+          "level": "4",
+          "detailLevel": 4,
+          "charter": "",
+          "notes": {
+            "total": 218,
+            "tap": 184,
+            "hold": 14,
+            "slide": 4,
+            "touch": 14,
+            "break": 2
+          },
+          "versionCode": 24006,
+          "releaseDate": "2025-03-05",
+          "locked": false
+        },
+        {
+          "cid": "11639_1",
+          "difficulty": 1,
+          "level": "7+",
+          "detailLevel": 7.8,
+          "charter": "",
+          "notes": {
+            "total": 366,
+            "tap": 294,
+            "hold": 23,
+            "slide": 9,
+            "touch": 30,
+            "break": 10
+          },
+          "versionCode": 24006,
+          "releaseDate": "2025-03-05",
+          "locked": false
+        },
+        {
+          "cid": "11639_2",
+          "difficulty": 2,
+          "level": "10",
+          "detailLevel": 10.5,
+          "charter": "はっぴー",
+          "notes": {
+            "total": 583,
+            "tap": 440,
+            "hold": 42,
+            "slide": 47,
+            "touch": 25,
+            "break": 29
+          },
+          "versionCode": 24006,
+          "releaseDate": "2025-03-05",
+          "locked": false
+        },
+        {
+          "cid": "11639_3",
+          "difficulty": 3,
+          "level": "12+",
+          "detailLevel": 12.8,
+          "charter": "はっぴー",
+          "notes": {
+            "total": 807,
+            "tap": 569,
+            "hold": 16,
+            "slide": 144,
+            "touch": 20,
+            "break": 58
+          },
+          "versionCode": 24006,
+          "releaseDate": "2025-03-05",
+          "locked": false
+        }
+      ],
+      "catalogRevision": "e8504abc4f38e635737bb1c57aa9101ad1bc27a27a8de9c43209748c32407c8d",
+      "catalogVersion": "ce740db16af80a4aba486bee2742e05c44dd8c03e03239a4216897a8fba6f34e",
+      "gameVersion": 25500,
+      "sync": {
+        "createdAt": "2026-11-11T05:32:10.273Z",
+        "updatedAt": "2026-11-11T05:32:10.273Z",
+        "lastSyncedAt": "2026-11-11T05:32:10.273Z"
+      }
+    },
+    {
+      "id": "100018",
+      "source": "lxns",
+      "sourceSongId": 100018,
+      "sourceMetadata": {
+        "genre": "宴会場",
+        "version": 24000,
+        "locked": false,
+        "releaseDate": "2024-06-06"
+      },
+      "title": "[協]Love You",
+      "type": "utage",
+      "artist": "Q;indivi [cover]",
+      "category": "宴会場",
+      "bpm": 135,
+      "version": "舞萌DX 2024",
+      "versionCode": 24000,
+      "isNew": false,
+      "disabled": false,
+      "locked": false,
+      "releaseDate": "2024-06-06",
+      "rights": null,
+      "charts": [
+        {
+          "cid": "100018_0",
+          "difficulty": 0,
+          "level": "12?",
+          "detailLevel": 0,
+          "charter": "",
+          "notes": {
+            "total": 348,
+            "tap": 268,
+            "hold": 44,
+            "slide": 30,
+            "touch": 0,
+            "break": 6
+          },
+          "versionCode": 24000,
+          "releaseDate": "2024-06-06",
+          "locked": false,
+          "isBuddy": false,
+          "kanji": "協",
+          "description": "LET'S PARTY!!"
+        }
+      ],
+      "catalogRevision": "e8504abc4f38e635737bb1c57aa9101ad1bc27a27a8de9c43209748c32407c8d",
+      "catalogVersion": "ce740db16af80a4aba486bee2742e05c44dd8c03e03239a4216897a8fba6f34e",
+      "gameVersion": 25500,
+      "sync": {
+        "createdAt": "2026-11-11T05:32:10.273Z",
+        "updatedAt": "2026-11-11T05:32:10.273Z",
+        "lastSyncedAt": "2026-11-11T05:32:10.273Z"
+      }
+    },
+    {
+      "id": "100022",
+      "source": "lxns",
+      "sourceSongId": 100022,
+      "sourceMetadata": {
+        "genre": "宴会場",
+        "version": 24010,
+        "locked": false,
+        "releaseDate": "2024-12-04"
+      },
+      "title": "[蔵]In Chaos",
+      "type": "utage",
+      "artist": "Hiro「Crackin’DJ」",
+      "category": "宴会場",
+      "bpm": 140,
+      "version": "舞萌DX 2024",
+      "versionCode": 24000,
+      "isNew": false,
+      "disabled": false,
+      "locked": false,
+      "releaseDate": "2024-12-04",
+      "rights": null,
+      "charts": [
+        {
+          "cid": "100022_0",
+          "difficulty": 0,
+          "level": "14+?",
+          "detailLevel": 0,
+          "charter": "",
+          "notes": {
+            "total": 943,
+            "tap": 824,
+            "hold": 0,
+            "slide": 110,
+            "touch": 0,
+            "break": 9
+          },
+          "versionCode": 24010,
+          "releaseDate": "2024-12-04",
+          "locked": false,
+          "isBuddy": false,
+          "kanji": "蔵",
+          "description": "LET'S PARTY!"
+        }
+      ],
+      "catalogRevision": "e8504abc4f38e635737bb1c57aa9101ad1bc27a27a8de9c43209748c32407c8d",
+      "catalogVersion": "ce740db16af80a4aba486bee2742e05c44dd8c03e03239a4216897a8fba6f34e",
+      "gameVersion": 25500,
+      "sync": {
+        "createdAt": "2026-11-11T05:32:10.273Z",
+        "updatedAt": "2026-11-11T05:32:10.273Z",
+        "lastSyncedAt": "2026-11-11T05:32:10.273Z"
+      }
+    },
+    {
+      "id": "110281",
+      "source": "lxns",
+      "sourceSongId": 110281,
+      "sourceMetadata": {
+        "genre": "宴会場",
+        "version": 25000,
+        "locked": false,
+        "releaseDate": "2026-01-23"
+      },
+      "title": "[回]ダブルラリアット",
+      "type": "utage",
+      "artist": "アゴアニキ",
+      "category": "宴会場",
+      "bpm": 138,
+      "version": "舞萌DX 2025",
+      "versionCode": 25000,
+      "isNew": false,
+      "disabled": false,
+      "locked": false,
+      "releaseDate": "2026-01-23",
+      "rights": "© Crypton Future Media, INC. www.piapro.net (+piapro logo)",
+      "charts": [
+        {
+          "cid": "110281_0",
+          "difficulty": 0,
+          "level": "13?",
+          "detailLevel": 0,
+          "charter": "",
+          "notes": {
+            "left": {
+              "total": 653,
+              "tap": 557,
+              "hold": 20,
+              "slide": 55,
+              "touch": 0,
+              "break": 21
+            },
+            "right": {
+              "total": 653,
+              "tap": 557,
+              "hold": 20,
+              "slide": 55,
+              "touch": 0,
+              "break": 21
+            }
+          },
+          "versionCode": 25000,
+          "releaseDate": "2026-01-23",
+          "locked": false,
+          "isBuddy": true,
+          "kanji": "回",
+          "description": "LET'S PARTY!!"
+        }
+      ],
+      "catalogRevision": "e8504abc4f38e635737bb1c57aa9101ad1bc27a27a8de9c43209748c32407c8d",
+      "catalogVersion": "ce740db16af80a4aba486bee2742e05c44dd8c03e03239a4216897a8fba6f34e",
+      "gameVersion": 25500,
+      "sync": {
+        "createdAt": "2026-11-11T05:32:10.273Z",
+        "updatedAt": "2026-11-11T05:32:10.273Z",
+        "lastSyncedAt": "2026-11-11T05:32:10.273Z"
+      }
+    }
+  ],
+  "syncs": [
+    {
+      "id": "synthetic-player",
+      "scores": [
+        {
+          "musicId": "30",
+          "chartIndex": 3,
+          "score": "100.5%",
+          "rating": 1,
+          "isNew": true,
+          "fc": "ap",
+          "fs": "fdx"
+        }
+      ]
+    }
+  ],
+  "scoreChanges": [
+    {
+      "musicId": "30",
+      "chartIndex": 3
+    }
+  ],
+  "jobs": [
+    {
+      "id": "synthetic-job",
+      "musicIds": [
+        "30_3"
+      ]
+    }
+  ],
+  "aliases": [
+    {
+      "musicIds": [
+        "30"
+      ]
+    }
+  ],
+  "covers": [
+    "30"
+  ]
+}

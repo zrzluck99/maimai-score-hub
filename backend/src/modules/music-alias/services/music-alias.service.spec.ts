@@ -1,229 +1,114 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return */
 import { MusicAliasService } from './music-alias.service';
 
-const lxnsSongPayload = {
-  songs: [
-    {
-      id: 30,
-      title: 'ジングルベル',
-      artist: 'SEGA',
-      genre: 'POPS＆アニメ',
-      bpm: 120,
-      version: 10000,
-      difficulties: {
-        standard: [
-          {
-            type: 'standard',
-            difficulty: 0,
-            level: '4',
-            level_value: 4,
-            note_designer: '-',
-            version: 10000,
-          },
-        ],
-        dx: [
-          {
-            type: 'dx',
-            difficulty: 0,
-            level: '4',
-            level_value: 4,
-            note_designer: '-',
-            version: 10000,
-          },
-        ],
-      },
-    },
-  ],
-  genres: [{ id: 1, title: '流行&动漫', genre: 'POPS＆アニメ' }],
-  versions: [{ id: 1, title: 'maimai', version: 10000 }],
-};
-
-function response(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
-function requestUrl(input: string | URL | Request): string {
-  if (typeof input === 'string') {
-    return input;
-  }
-  return input instanceof URL ? input.href : input.url;
-}
-
-function createHarness() {
-  const bulkWrite = jest.fn().mockResolvedValue({});
-  const deleteMany = jest.fn().mockResolvedValue({ deletedCount: 0 });
-  const aliasLean = jest.fn().mockResolvedValue([]);
-  const aliasModel = {
-    bulkWrite,
-    deleteMany,
-    find: jest.fn().mockReturnValue({
-      select: jest.fn().mockReturnValue({ lean: aliasLean }),
-    }),
+function harness() {
+  const insertMany = jest.fn().mockResolvedValue({});
+  const rename = jest.fn().mockResolvedValue({});
+  const drop = jest.fn().mockResolvedValue({});
+  const candidate = {
+    insertMany,
+    rename,
+    drop,
+    createIndex: jest.fn().mockResolvedValue({}),
   };
-  const musicDocs = [
-    {
-      id: '30',
-      title: 'ジングルベル',
-      type: 'standard',
-      category: '流行&动漫',
-    },
-    {
-      id: '10030',
-      title: 'ジングルベル',
-      type: 'dx',
-      category: '流行&动漫',
-    },
-  ];
-  const musicModel = {
-    find: jest.fn().mockReturnValue({
-      select: jest.fn().mockReturnValue({
-        lean: jest.fn().mockResolvedValue(musicDocs),
-      }),
-    }),
+  const lean = jest.fn().mockResolvedValue([]);
+  const aliases = {
+    db: { db: { collection: jest.fn(() => candidate) } },
+    find: jest.fn(() => ({ select: () => ({ lean }) })),
   };
-  const config = {
-    get: jest.fn((_key: string, fallback: unknown) => fallback),
+  const music = {
+    find: jest.fn(() => ({
+      lean: () =>
+        Promise.resolve([
+          { id: '30', sourceSongId: 30 },
+          { id: '10030', sourceSongId: 30 },
+        ]),
+    })),
   };
-  const redis = {
-    key: jest.fn((key: string) => `test:${key}`),
-    getJson: jest.fn().mockResolvedValue(null),
-    setJson: jest.fn().mockResolvedValue(undefined),
-    del: jest.fn().mockResolvedValue(1),
-  };
+  const redis = { getJson: jest.fn(), setJson: jest.fn() };
   const service = new MusicAliasService(
-    aliasModel as never,
-    musicModel as never,
-    config as never,
+    aliases as never,
+    music as never,
+    {} as never,
     redis as never,
   );
-  return {
-    service,
-    aliasModel,
-    aliasLean,
-    bulkWrite,
-    deleteMany,
-    redis,
-  };
+  return { service, aliases, lean, insertMany, rename, drop, redis };
+}
+const payload = { aliases: [{ song_id: 30, aliases: ['\u5723\u8bde\u6b4c'] }] };
+function mockFetch(body: unknown = payload, status = 200) {
+  return jest.spyOn(globalThis, 'fetch').mockImplementation((url) => {
+    expect(url).toBe('https://maimai.lxns.net/api/v0/maimai/alias/list');
+    return Promise.resolve(new Response(JSON.stringify(body), { status }));
+  });
 }
 
-describe('MusicAliasService', () => {
-  afterEach(() => {
-    jest.restoreAllMocks();
-  });
-
-  it('syncs both providers and expands one LXNS song to standard and DX ids', async () => {
-    const { service, bulkWrite, deleteMany, redis } = createHarness();
-    jest.spyOn(globalThis, 'fetch').mockImplementation((input) => {
-      const url = requestUrl(input);
-      if (url.includes('yuzuchan')) {
-        return Promise.resolve(
-          response([
-            {
-              song_id: 10030,
-              name: 'ジングルベル',
-              alias: ['DX圣诞歌'],
-            },
-          ]),
-        );
-      }
-      if (url.includes('/alias/list')) {
-        return Promise.resolve(
-          response({
-            aliases: [{ song_id: 30, aliases: ['圣诞歌'] }],
-          }),
-        );
-      }
-      return Promise.resolve(response(lxnsSongPayload));
-    });
-
-    const result = await service.syncAll();
-
-    expect(result.sources.yuzuchan.status).toBe('completed');
+describe('MusicAliasService LXNS-only', () => {
+  afterEach(() => jest.restoreAllMocks());
+  it('expands the verified source ID to SD/DX without requesting other catalogs', async () => {
+    const h = harness();
+    const fetch = mockFetch();
+    const result = await h.service.syncAll();
+    expect(result.sources.yuzuchan.status).toBe('skipped');
     expect(result.sources.lxns.status).toBe('completed');
-    const operations = bulkWrite.mock.calls.flatMap(([items]) => items);
-    const lxnsOperation = operations.find(
-      (operation) => operation.updateOne.filter.source === 'lxns',
-    );
-    expect(lxnsOperation.updateOne.update.$set.musicIds).toEqual([
-      '30',
-      '10030',
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(h.insertMany).toHaveBeenCalledWith([
+      expect.objectContaining({ musicIds: ['30', '10030'], source: 'lxns' }),
     ]);
-    expect(deleteMany).toHaveBeenCalledWith(
-      expect.objectContaining({ source: 'yuzuchan' }),
-    );
-    expect(deleteMany).toHaveBeenCalledWith(
-      expect.objectContaining({ source: 'lxns' }),
-    );
-    expect(redis.del).toHaveBeenCalledWith('test:catalog:music-aliases:v1');
-  });
-
-  it('keeps the previous snapshot for a failed provider', async () => {
-    const { service, deleteMany } = createHarness();
-    jest.spyOn(globalThis, 'fetch').mockImplementation((input) => {
-      const url = requestUrl(input);
-      if (url.includes('yuzuchan')) {
-        return Promise.resolve(response({ error: 'temporary' }, 503));
-      }
-      if (url.includes('/alias/list')) {
-        return Promise.resolve(
-          response({
-            aliases: [{ song_id: 30, aliases: ['圣诞歌'] }],
-          }),
-        );
-      }
-      return Promise.resolve(response(lxnsSongPayload));
+    expect(h.rename).toHaveBeenCalledWith('music_aliases_lxns', {
+      dropTarget: true,
     });
-
-    const result = await service.syncAll();
-
-    expect(result.sources.yuzuchan.status).toBe('failed');
-    expect(result.sources.lxns.status).toBe('completed');
-    expect(deleteMany).toHaveBeenCalledTimes(1);
-    expect(deleteMany).toHaveBeenCalledWith(
-      expect.objectContaining({ source: 'lxns' }),
-    );
   });
-
-  it('groups providers by music id and prefers the Yuzuchan display form', async () => {
-    const { service, aliasLean, redis } = createHarness();
-    aliasLean.mockResolvedValue([
+  it.each([{}, { aliases: [] }, { aliases: [{ song_id: 30, aliases: [4] }] }])(
+    'rejects malformed batches before writing: %j',
+    async (body) => {
+      const h = harness();
+      mockFetch(body);
+      await expect(h.service.syncAll()).rejects.toThrow();
+      expect(h.insertMany).not.toHaveBeenCalled();
+      expect(h.rename).not.toHaveBeenCalled();
+    },
+  );
+  it('preserves the live snapshot on fetch failure', async () => {
+    const h = harness();
+    mockFetch({}, 503);
+    await expect(h.service.syncAll()).rejects.toThrow('503');
+    expect(h.rename).not.toHaveBeenCalled();
+  });
+  it('preserves the live snapshot and removes only candidate after write failure', async () => {
+    const h = harness();
+    mockFetch();
+    h.insertMany.mockRejectedValue(new Error('disk full'));
+    await expect(h.service.syncAll()).rejects.toThrow('disk full');
+    expect(h.rename).not.toHaveBeenCalled();
+    expect(h.drop).toHaveBeenCalledTimes(1);
+  });
+  it('groups only LXNS aliases and never reads mixed-source caches', async () => {
+    const h = harness();
+    h.lean.mockResolvedValue([
       {
         source: 'lxns',
         musicIds: ['30', '10030'],
-        alias: 'DX圣诞歌',
-        normalizedAlias: 'dx圣诞歌',
-        syncedAt: '2026-08-30T01:00:00.000Z',
+        alias: 'DX\u5723\u8bde\u6b4c',
+        normalizedAlias: 'dx\u5723\u8bde\u6b4c',
+        syncedAt: '2026-08-30T01:00:00Z',
       },
       {
         source: 'yuzuchan',
         musicIds: ['10030'],
-        alias: 'dx圣诞歌',
-        normalizedAlias: 'dx圣诞歌',
-        syncedAt: '2026-08-30T02:00:00.000Z',
-      },
-      {
-        source: 'lxns',
-        musicIds: ['30'],
-        alias: '圣诞歌',
-        normalizedAlias: '圣诞歌',
-        syncedAt: '2026-08-30T01:00:00.000Z',
+        alias: 'dx\u5723\u8bde\u6b4c',
+        normalizedAlias: 'dx\u5723\u8bde\u6b4c',
+        syncedAt: '2026-08-30T02:00:00Z',
       },
     ]);
-
-    await expect(service.findAll()).resolves.toEqual({
-      revision: '2026-08-30T02:00:00.000Z',
+    await expect(h.service.findAll()).resolves.toEqual({
+      revision: '2026-08-30T01:00:00.000Z',
       aliases: [
-        { musicId: '30', aliases: ['圣诞歌', 'DX圣诞歌'] },
-        { musicId: '10030', aliases: ['dx圣诞歌'] },
+        { musicId: '30', aliases: ['DX\u5723\u8bde\u6b4c'] },
+        { musicId: '10030', aliases: ['DX\u5723\u8bde\u6b4c'] },
       ],
     });
-    expect(redis.setJson).toHaveBeenCalledWith(
-      'test:catalog:music-aliases:v1',
-      expect.any(Object),
-      { ttlSeconds: 300 },
+    expect(h.aliases.find).toHaveBeenCalledWith(
+      expect.objectContaining({ source: 'lxns' }),
     );
+    expect(h.redis.getJson).not.toHaveBeenCalled();
   });
 });

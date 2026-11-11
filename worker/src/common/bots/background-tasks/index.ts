@@ -1,3 +1,4 @@
+import { retainFriends } from "../../friend-policy.ts";
 import type { BotManager } from "../bot-manager.ts";
 import {
   bindBotSaveScheduler,
@@ -37,7 +38,7 @@ export function startBotBackgroundTasks(manager: BotManager): StopTask[] {
     createHealthCheckTask(manager),
     createBotStatusReportTask(manager),
     createBotFriendListRefreshTask(manager),
-    createCleanupFriendsTask(manager),
+    ...(retainFriends() ? [] : [createCleanupFriendsTask(manager)]),
   ].map(startPeriodicTask);
 
   return [

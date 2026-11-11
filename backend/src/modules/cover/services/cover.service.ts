@@ -1,9 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import type { Model } from 'mongoose';
-import { mkdir, readdir, stat } from 'node:fs/promises';
+import { mkdir, readdir, stat, rename, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import sharp from 'sharp';
+import { randomUUID } from 'node:crypto';
 
 import { MusicEntity } from '../../music/schemas/music.schema';
 import type { MusicDocument } from '../../music/schemas/music.schema';
@@ -40,8 +41,8 @@ const DIVING_FISH_MUSIC_URL =
 export class CoverService {
   private readonly logger = new Logger(CoverService.name);
   private readonly divingFishCoverBase = 'https://www.diving-fish.com/covers';
-  private readonly lxnsCoverBase = 'https://assets.lxns.net/maimai/jacket';
-  private readonly baseDir = join(process.cwd(), 'covers');
+  private readonly lxnsCoverBase = 'https://assets2.lxns.net/maimai/jacket';
+  private readonly baseDir = join(process.cwd(), 'covers', 'lxns-v1');
 
   constructor(
     @InjectModel(MusicEntity.name)
@@ -74,7 +75,7 @@ export class CoverService {
 
   /** lxns cover URL: raw numeric song id */
   private buildLxnsUrl(lxnsId: string) {
-    return `${this.lxnsCoverBase}/${lxnsId}.png!webp`;
+    return `${this.lxnsCoverBase}/${lxnsId}.png`;
   }
 
   async getLocalPathIfExists(id: string, format: CoverFormat = 'png') {
@@ -113,7 +114,7 @@ export class CoverService {
     await mkdir(this.baseDir, { recursive: true });
   }
 
-  private async buildCrossIdMap(signal?: AbortSignal): Promise<{
+  private async buildLegacyCrossIdMap(signal?: AbortSignal): Promise<{
     toDivingFishId: (dbId: string) => string | null;
     toLxnsId: (dbId: string) => string | null;
   }> {
@@ -170,6 +171,21 @@ export class CoverService {
     return {
       toDivingFishId: (dbId) => dbId,
       toLxnsId: (dbId) => dfToLxns.get(dbId) ?? null,
+    };
+  }
+
+  private async buildCrossIdMap(signal?: AbortSignal) {
+    signal?.throwIfAborted();
+    const rows = await this.musicModel
+      .find({ source: 'lxns' })
+      .select({ id: 1, sourceSongId: 1 })
+      .lean();
+    const ids = new Map(
+      rows.map((m) => [String(m.id), String(m.sourceSongId)]),
+    );
+    return {
+      toDivingFishId: (): string | null => null,
+      toLxnsId: (id: string) => ids.get(id) ?? null,
     };
   }
 
@@ -252,7 +268,7 @@ export class CoverService {
     signal?: AbortSignal,
   ): Promise<SyncSummary> {
     signal?.throwIfAborted();
-    this.logger.log(`Using diving-fish music data source, force=${force}`);
+    this.logger.log(`Using LXNS-only music data source, force=${force}`);
 
     const musics = await this.musicModel.find().select({ id: 1 }).lean();
     const summary: SyncSummary = {
@@ -407,19 +423,23 @@ export class CoverService {
     outputPath: string,
     format: CoverFormat,
   ): Promise<boolean> {
+    const temporary = outputPath + `.tmp-${randomUUID()}`;
     try {
-      const image = sharp(inputPath, { failOn: 'none' });
+      const image = sharp(inputPath);
       if (format === 'webp') {
-        await image.webp({ quality: 78 }).toFile(outputPath);
+        await image.webp({ quality: 78 }).toFile(temporary);
       } else {
-        await image.png().toFile(outputPath);
+        await image.png().toFile(temporary);
       }
+      await rename(temporary, outputPath);
       return true;
     } catch (err) {
       this.logger.warn(
         `Failed to convert local cover variant: ${inputPath} -> ${outputPath} (${(err as Error).message})`,
       );
       return false;
+    } finally {
+      await rm(temporary, { force: true });
     }
   }
 
@@ -430,18 +450,32 @@ export class CoverService {
     const pngPath = this.buildLocalPath(dbId, 'png');
     const webpPath = this.buildLocalPath(dbId, 'webp');
 
+    const suffix = `.tmp-${randomUUID()}`;
+    const tempPng = pngPath + suffix;
+    const tempWebp = webpPath + suffix;
     try {
-      const image = sharp(sourceBuffer, { failOn: 'none' });
-      await Promise.all([
-        image.clone().png().toFile(pngPath),
-        image.clone().webp({ quality: 78 }).toFile(webpPath),
+      const image = sharp(sourceBuffer);
+      const writes = await Promise.allSettled([
+        image.clone().png().toFile(tempPng),
+        image.clone().webp({ quality: 78 }).toFile(tempWebp),
       ]);
+      const failure = writes.find((result) => result.status === 'rejected');
+      if (failure?.status === 'rejected') {
+        throw failure.reason;
+      }
+      await rename(tempPng, pngPath);
+      await rename(tempWebp, webpPath);
       return true;
     } catch (err) {
       this.logger.warn(
-        `Failed to save cover variants for dbId=${dbId}: ${(err as Error).message}`,
+        `Failed to save LXNS cover ${dbId}: ${(err as Error).message}`,
       );
       return false;
+    } finally {
+      await Promise.all([
+        rm(tempPng, { force: true }),
+        rm(tempWebp, { force: true }),
+      ]);
     }
   }
 
@@ -468,6 +502,52 @@ export class CoverService {
   }
 
   private async fetchCoverSourceBuffer(
+    dbId: string,
+    _toDivingFishId: (dbId: string) => string | null,
+    toLxnsId: (dbId: string) => string | null,
+    signal?: AbortSignal,
+  ): Promise<Buffer | null> {
+    // All candidates, including an utage base-image fallback, remain on LXNS.
+    const candidates = new Set<string>();
+    for (const id of buildCoverSourceDbIds(dbId)) {
+      const mapped = toLxnsId(id);
+      if (mapped) {
+        candidates.add(mapped);
+      } else if (id !== dbId) {
+        candidates.add(String(Number(id) % 10000));
+      }
+    }
+    for (const id of candidates) {
+      signal?.throwIfAborted();
+      const url = this.buildLxnsUrl(id);
+      try {
+        const response = await observeFetch(
+          {
+            target: 'lxns',
+            apiGroup: 'cover',
+            method: 'GET',
+            urlGroup: 'lxns.cover',
+            statusCode: 0,
+            durationMs: 0,
+            attrs: { dbId },
+          },
+          () => fetch(url, { signal }),
+        );
+        if (
+          response.ok &&
+          response.headers.get('cache-control') !== 'no-cache'
+        ) {
+          return Buffer.from(await response.arrayBuffer());
+        }
+      } catch {
+        signal?.throwIfAborted();
+      }
+    }
+    this.logger.warn(`LXNS cover unavailable for ${dbId}`);
+    return null;
+  }
+
+  private async fetchLegacyCoverSourceBuffer(
     dbId: string,
     toDivingFishId: (dbId: string) => string | null,
     toLxnsId: (dbId: string) => string | null,

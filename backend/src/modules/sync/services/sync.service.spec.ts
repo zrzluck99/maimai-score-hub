@@ -274,10 +274,18 @@ describe('SyncService current-catalog rating', () => {
         ],
       });
       const deleted = harness.current()!.scores.find((s) => s.musicId === '18');
-      // Import metadata is already cached; the rating refresh must use the
-      // updated catalog even when an observation leaves scores unchanged.
+      // Every operation sees the updated catalog, including unchanged observations.
       harness.musicModel.find.mockReturnValue({
-        lean: jest.fn().mockResolvedValue([{ id: '17' }]),
+        lean: jest.fn().mockResolvedValue([
+          {
+            id: '17',
+            title: 'test-17',
+            type: 'standard',
+            category: '\u821e\u840c',
+            isNew: false,
+            charts: [{}, {}, {}, { cid: '17_3', detailLevel: 13.5 }],
+          },
+        ]),
       });
       const result = await harness.service.createFromUserMusic({
         friendCode: '634142510810999',
@@ -1221,4 +1229,64 @@ describe('SyncService best-effort score change delivery', () => {
       { ordered: false },
     ]);
   });
+});
+
+describe('SyncService LXNS catalog reference guard', () => {
+  it('ignores unknown unplayed variants without overwriting a played original', async () => {
+    const h = createHarness();
+    await h.service.createFromJob({
+      id: 'unplayed-variant',
+      friendCode: '634142510810999',
+      jobType: 'update_score',
+      result: {
+        舞萌: {
+          standard: {
+            'test-17': {
+              '3': { score: '100.0000%', dxScore: '100', fc: null, fs: null },
+              '0': { score: null, dxScore: null, fc: null, fs: null },
+            },
+            'test-17 (2)': {
+              '3': { score: null, dxScore: null, fc: null, fs: null },
+            },
+          },
+        },
+      },
+    });
+    expect(
+      h.current()?.scores.find((s) => s.musicId === '17' && s.chartIndex === 3)
+        ?.score,
+    ).toBe('100.0000%');
+    expect(h.current()?.scores.some((s) => s.musicId.includes('(2)'))).toBe(
+      false,
+    );
+  });
+  it.each([
+    { targetedScores: [{ musicId: 'missing_3', fc: 'ap' }] },
+    {
+      '\u821e\u840c': {
+        standard: { 'unknown song': { '3': { score: '100.0000%' } } },
+      },
+    },
+    {
+      '\u821e\u840c': {
+        standard: { 'test-17': { '0': { score: '100.0000%' } } },
+      },
+    },
+  ])(
+    'rejects unmatched observed scores before committing a partial result',
+    async (result) => {
+      const h = createHarness();
+      const before = JSON.stringify(h.current());
+      await expect(
+        h.service.createFromJob({
+          id: 'unmatched',
+          friendCode: '634142510810999',
+          jobType: 'update_score',
+          result,
+        }),
+      ).rejects.toThrow('CATALOG_REFERENCE_MISSING');
+      expect(JSON.stringify(h.current())).toBe(before);
+      expect(h.scoreChangeModel.bulkWrite).not.toHaveBeenCalled();
+    },
+  );
 });

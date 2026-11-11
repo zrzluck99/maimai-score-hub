@@ -1,3 +1,4 @@
+import { retainFriends } from "../../common/friend-policy.ts";
 import { botManager } from "../../common/bots/bot-manager.ts";
 import { runCleanup } from "../../common/bots/background-tasks/cleanup-friends.ts";
 import {
@@ -32,7 +33,7 @@ export class SharedEligibility {
               snapshot = botManager.friendListSnapshots.getSnapshot();
             }
             if (!snapshot) throw new LocalEligibilityError();
-            if (snapshot.friends.length >= 50) {
+            if (snapshot.friends.length >= 50 && !retainFriends()) {
               await runCleanup(botManager);
               botManager.friendListSnapshots.requestRefresh();
               await refreshBotFriendList(botManager);

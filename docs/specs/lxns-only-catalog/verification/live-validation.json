@@ -1,0 +1,10 @@
+{
+  "source": "https://maimai.lxns.net/api/v0/maimai/song/list?version=25500&notes=true",
+  "verifiedAt": "2026-11-11T05:32:10.271Z",
+  "sha256": "3947e733a125537f927f1c2433351a653849bacae752931e42e6a17cdf32a405",
+  "songs": 1360,
+  "rows": 1421,
+  "charts": 5623,
+  "revision": "8368b9b287190dda7f3cfdd79ba9d4bac0df83f934147b150095f49088f2654f",
+  "catalogVersion": "a7bd4e1f249f6a59d3e30121b8cac455e22aba69f69a1e12b71b785f7afa7efa"
+}

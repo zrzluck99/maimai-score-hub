@@ -20,7 +20,8 @@ jest.mock('../rendering/score-export.render', () => ({
 
 const FRIEND_CODE = '123456789012345';
 const STALE_PROFILE_RATING = 12_345;
-const CURRENT_RATING = 300;
+// Current constants 13 and 12 at 100%: floor(13 * 100 * .216) + floor(12 * 100 * .216).
+const CURRENT_RATING = 539;
 
 const profile = {
   avatarUrl: null,

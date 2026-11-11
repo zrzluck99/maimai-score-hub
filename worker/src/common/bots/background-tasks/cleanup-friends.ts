@@ -1,3 +1,4 @@
+import { retainFriends } from "../../friend-policy.ts";
 /**
  * 清理服务
  * 负责清理不在活跃任务列表中的好友请求和好友
@@ -134,6 +135,7 @@ let cleanupRunning = false;
  * 运行一次清理任务。调度周期由 worker 入口统一管理。
  */
 export async function runCleanup(manager: BotManager): Promise<void> {
+  if (retainFriends()) return;
   if (cleanupRunning) {
     console.log("[CleanupService] Cleanup already in progress, skipping");
     return;

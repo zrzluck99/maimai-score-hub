@@ -1,0 +1,33 @@
+﻿{
+  "catalogRevision": "e8504abc4f38e635737bb1c57aa9101ad1bc27a27a8de9c43209748c32407c8d",
+  "catalogVersion": "ce740db16af80a4aba486bee2742e05c44dd8c03e03239a4216897a8fba6f34e",
+  "oldCount": 6,
+  "candidateCount": 6,
+  "safeToSwitch": true,
+  "issues": [],
+  "syncs": [
+    {
+      "id": "synthetic-player",
+      "beforeB50": 22,
+      "afterB50": 283,
+      "changed": [
+        {
+          "musicId": "30",
+          "chartIndex": 3,
+          "before": {
+            "rating": 22,
+            "isNew": true
+          },
+          "after": {
+            "rating": 283,
+            "isNew": false
+          }
+        }
+      ]
+    }
+  ],
+  "coverage": {
+    "covers": "provided",
+    "productionVerified": false
+  }
+}

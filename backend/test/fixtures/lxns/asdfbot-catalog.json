@@ -1,0 +1,118 @@
+{
+  "data": {
+    "versions": [
+      {"version": 10000, "title": "maimai"},
+      {"version": 11000, "title": "maimai PLUS"},
+      {"version": 12000, "title": "GreeN"},
+      {"version": 13000, "title": "GreeN PLUS"},
+      {"version": 14000, "title": "ORANGE"},
+      {"version": 15000, "title": "ORANGE PLUS"},
+      {"version": 16000, "title": "PiNK"},
+      {"version": 17000, "title": "PiNK PLUS"},
+      {"version": 18000, "title": "MURASAKi"},
+      {"version": 18500, "title": "MURASAKi PLUS"},
+      {"version": 19000, "title": "MiLK"},
+      {"version": 19500, "title": "MiLK PLUS"},
+      {"version": 19900, "title": "FiNALE"},
+      {"version": 20000, "title": "舞萌DX"},
+      {"version": 21000, "title": "舞萌DX 2021"},
+      {"version": 22000, "title": "舞萌DX 2022"},
+      {"version": 23000, "title": "舞萌DX 2023"},
+      {"version": 24000, "title": "舞萌DX 2024"},
+      {"version": 25000, "title": "舞萌DX 2025"},
+      {"version": 25500, "title": "舞萌DX 2026"}
+    ],
+    "genres": [
+      {"genre": "maimai", "title": "舞萌"},
+      {"genre": "POPSアニメ", "title": "流行&动漫"},
+      {"genre": "宴会场", "title": "宴会场"}
+    ],
+    "songs": [
+      {
+        "id": 30,
+        "title": "ネコ日和。",
+        "artist": "Kai/能登有沙",
+        "genre": "maimai",
+        "bpm": 171,
+        "version": 10000,
+        "rights": null,
+        "locked": true,
+        "disabled": null,
+        "difficulties": {
+          "standard": [
+            {
+              "type": "standard",
+              "difficulty": 0,
+              "level": "6",
+              "level_value": 6.0,
+              "note_designer": "-",
+              "version": 10000,
+              "notes": {"total": 177, "tap": 162, "hold": 4, "slide": 7, "touch": 0, "break": 4}
+            }
+          ],
+          "dx": [
+            {
+              "type": "dx",
+              "difficulty": 3,
+              "level": "13+",
+              "level_value": 13.7,
+              "note_designer": "サファ太",
+              "version": 25500,
+              "notes": {"total": 631, "tap": 417, "hold": 8, "slide": 91, "touch": 41, "break": 74}
+            }
+          ]
+        }
+      },
+      {
+        "id": 9999,
+        "title": "Contract Test DX",
+        "artist": "Tester",
+        "genre": "POPSアニメ",
+        "bpm": 200,
+        "version": 25000,
+        "rights": "© Test",
+        "locked": false,
+        "disabled": true,
+        "difficulties": {
+          "dx": [
+            {
+              "type": "dx",
+              "difficulty": 4,
+              "level": "14",
+              "level_value": 14.2,
+              "note_designer": "",
+              "version": 25502,
+              "notes": {"total": 10, "tap": 2, "hold": 2, "slide": 2, "touch": 2, "break": 2}
+            }
+          ]
+        }
+      },
+      {
+        "id": 100018,
+        "title": "[協]Love You",
+        "artist": "Q;indivi [cover]",
+        "genre": "宴会场",
+        "bpm": 135,
+        "version": 24000,
+        "difficulties": {
+          "standard": [],
+          "dx": [],
+          "utage": [
+            {
+              "type": "utage",
+              "difficulty": 0,
+              "level": "12?",
+              "level_value": 0,
+              "note_designer": "",
+              "version": 24000,
+              "kanji": "協",
+              "description": "LET'S PARTY!!",
+              "is_buddy": false,
+              "notes": {"total": 348, "tap": 268, "hold": 44, "slide": 30, "touch": 0, "break": 6}
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

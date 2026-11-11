@@ -16,13 +16,14 @@ import type { ScoreFetchTarget } from '@maimai-score-hub/shared';
 
 import { MusicEntity } from '../schemas/music.schema';
 import {
-  getDivingFishSourceUrl,
-  convertDivingFishItemToDocument,
-  type DivingFishItem,
-} from '../../../common/prober/diving-fish/transform';
+  lxnsCatalogUrl,
+  parseLxnsCatalog,
+  LXNS_GAME_VERSION,
+} from '../../../common/prober/lxns/catalog';
+import { publishLxnsCatalog } from '../../../common/prober/lxns/catalog-store';
 import { observeFetch } from '../../../common/observability/external-call-recorder';
 
-const MUSIC_DATA_SOURCE = 'diving-fish';
+const MUSIC_DATA_SOURCE = 'lxns';
 const CATEGORY_GENRE: Record<string, number> = {
   '流行&动漫': 101,
   'niconico＆VOCALOID™': 102,
@@ -79,10 +80,10 @@ export class MusicService {
     if (typeof fetch === 'function') {
       return observeFetch(
         {
-          target: 'diving_fish',
+          target: 'lxns',
           apiGroup: 'catalog',
           method: 'GET',
-          urlGroup: 'diving_fish.music_data',
+          urlGroup: 'lxns.song_list',
           statusCode: 0,
           durationMs: 0,
         },
@@ -130,16 +131,8 @@ export class MusicService {
   }
 
   async findAll() {
-    const cacheKey = 'music:all';
-    const cached = await this.cache.get(cacheKey);
-    if (cached) {
-      return cached;
-    }
-
-    this.logger.log('Fetching all music data from database...');
+    // Read the atomically published collection. Do not retain a per-process old revision.
     const result = await this.musicModel.find().sort({ id: 1 }).lean();
-    this.logger.log(`Fetched ${result.length} music records.`);
-    await this.cache.set(cacheKey, result, 1000 * 60 * 60);
     return result;
   }
 
@@ -191,91 +184,39 @@ export class MusicService {
 
   async syncMusicData(signal?: AbortSignal) {
     signal?.throwIfAborted();
-    const sourceUrl = getDivingFishSourceUrl(this.configService);
+    const gameVersion = Number(
+      this.configService.get<string | number>(
+        'LXNS_GAME_VERSION',
+        LXNS_GAME_VERSION,
+      ),
+    );
+    const sourceUrl = lxnsCatalogUrl(gameVersion);
     this.logger.log(
       `Syncing music data from ${MUSIC_DATA_SOURCE} (${sourceUrl}) ...`,
     );
-    return this.syncFromDivingFish(sourceUrl, signal);
-  }
-
-  private async syncFromDivingFish(sourceUrl: string, signal?: AbortSignal) {
-    let items: DivingFishItem[];
-
     try {
       const response = await this.fetchJson(sourceUrl, signal);
       if (!response.ok) {
-        throw new Error(`Remote responded with status ${response.status}`);
+        throw new Error(`LXNS responded with status ${response.status}`);
       }
-      const payload: unknown = await response.json();
-      if (!Array.isArray(payload)) {
-        throw new Error('Unexpected payload structure (not an array)');
-      }
-      items = payload as DivingFishItem[];
-    } catch (error) {
-      this.logger.error(
-        'Failed to fetch music data from diving-fish',
-        error instanceof Error ? error.stack : String(error),
-      );
-      throw new InternalServerErrorException('Fetch music data failed');
-    }
-
-    if (!items.length) {
-      this.logger.warn('Music data list is empty; skipping write');
-      return {
-        matchedCount: 0,
-        upsertedCount: 0,
-        modifiedCount: 0,
-        total: 0,
-      };
-    }
-
-    const now = new Date();
-    const documents = items.map((item) =>
-      convertDivingFishItemToDocument(item, now),
-    );
-
-    signal?.throwIfAborted();
-    return this.persistDocuments(documents, items.length, signal);
-  }
-
-  private async persistDocuments(
-    documents: Array<ReturnType<typeof convertDivingFishItemToDocument>>,
-    total: number,
-    signal?: AbortSignal,
-  ) {
-    try {
-      const result = await this.musicModel.bulkWrite(
-        documents.map((document) => ({
-          updateOne: {
-            filter: { id: document.id },
-            update: { $set: document },
-            upsert: true,
-          },
-        })),
-        { ordered: false },
-      );
+      const snapshot = parseLxnsCatalog(await response.json(), gameVersion);
       signal?.throwIfAborted();
-      const stale = await this.musicModel.deleteMany({
-        id: { $nin: documents.map((document) => document.id) },
-      });
-      const summary = {
-        matchedCount: result.matchedCount,
-        modifiedCount: result.modifiedCount,
-        upsertedCount: result.upsertedCount,
-        removedCount: stale.deletedCount,
-        total,
+      const db = this.musicModel.db.db;
+      if (!db) {
+        throw new Error('Catalog database is not connected');
+      }
+      const result = await publishLxnsCatalog(db, snapshot, signal);
+      return {
+        ...result,
+        catalogVersion: snapshot.catalogVersion,
+        sourceSongCount: snapshot.sourceSongCount,
       };
-      this.logger.log(
-        `Music data sync finished: total=${summary.total}, upserted=${summary.upsertedCount}, modified=${summary.modifiedCount}, removed=${summary.removedCount}.`,
-      );
-      await this.cache.del('music:all');
-      return summary;
     } catch (error) {
       this.logger.error(
-        'Failed to persist music data',
+        'LXNS catalog sync failed; previous verified catalog retained',
         error instanceof Error ? error.stack : String(error),
       );
-      throw new InternalServerErrorException('Persist music data failed');
+      throw new InternalServerErrorException('LXNS catalog sync failed');
     }
   }
 

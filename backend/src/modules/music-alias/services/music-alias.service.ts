@@ -7,6 +7,7 @@ import type {
 } from '@maimai-score-hub/shared';
 import type { Model } from 'mongoose';
 import { randomUUID } from 'node:crypto';
+import { z } from 'zod';
 
 import { observeFetch } from '../../../common/observability/external-call-recorder';
 import {
@@ -27,7 +28,6 @@ const DEFAULT_YUZUCHAN_ALIAS_URL =
 const DEFAULT_LXNS_ALIAS_URL =
   'https://maimai.lxns.net/api/v0/maimai/alias/list';
 const DEFAULT_LXNS_SONG_URL = 'https://maimai.lxns.net/api/v0/maimai/song/list';
-const PUBLIC_CACHE_TTL_SECONDS = 5 * 60;
 const BULK_WRITE_BATCH_SIZE = 1000;
 
 type SourceAlias = {
@@ -50,6 +50,7 @@ export type MusicAliasSyncSummary = {
     MusicAliasSource,
     | { status: 'completed'; summary: MusicAliasSourceSyncSummary }
     | { status: 'failed'; error: string }
+    | { status: 'skipped'; reason: string }
   >;
 };
 
@@ -76,42 +77,111 @@ export class MusicAliasService {
 
   async syncAll(signal?: AbortSignal): Promise<MusicAliasSyncSummary> {
     signal?.throwIfAborted();
-    const musicDocs = await this.musicModel
-      .find()
-      .select({ _id: 0, id: 1, title: 1, type: 1, category: 1 })
-      .lean<MusicDoc[]>();
-    const musicIds = new Set(musicDocs.map((music) => String(music.id)));
-
-    const [yuzuchan, lxns] = await Promise.allSettled([
-      this.syncYuzuchan(musicIds, signal),
-      this.syncLxns(musicDocs, musicIds, signal),
-    ]);
-    const summary: MusicAliasSyncSummary = {
+    const musicDocs = await this.musicModel.find({ source: 'lxns' }).lean();
+    if (!musicDocs.length) {
+      throw new Error('Verified LXNS catalog is not initialized');
+    }
+    const summary = await this.syncLxnsOnly(musicDocs, signal);
+    return {
       sources: {
-        yuzuchan: this.sourceResult('yuzuchan', yuzuchan),
-        lxns: this.sourceResult('lxns', lxns),
+        yuzuchan: { status: 'skipped', reason: 'LXNS-only catalog' },
+        lxns: { status: 'completed', summary },
       },
     };
+  }
 
-    if (yuzuchan.status === 'rejected' && lxns.status === 'rejected') {
-      throw new Error(
-        `Alias sync failed for every source: yuzuchan=${this.errorMessage(yuzuchan.reason)}; lxns=${this.errorMessage(lxns.reason)}`,
+  private async syncLxnsOnly(musicDocs: MusicEntity[], signal?: AbortSignal) {
+    const payload = z
+      .object({
+        aliases: z
+          .array(
+            z.object({
+              song_id: z.number().int().positive(),
+              aliases: z.array(z.string().min(1)),
+            }),
+          )
+          .min(1),
+      })
+      .parse(
+        await this.fetchJson(
+          DEFAULT_LXNS_ALIAS_URL,
+          'lxns',
+          'lxns.alias_list',
+          signal,
+        ),
       );
+    const mapping = new Map<string, string[]>();
+    for (const music of musicDocs) {
+      const key = String(music.sourceSongId);
+      mapping.set(key, [...(mapping.get(key) ?? []), music.id]);
     }
-
-    await this.redis.del(this.publicCacheKey());
-    return summary;
+    const aliases: SourceAlias[] = [];
+    for (const row of payload.aliases) {
+      for (const value of row.aliases) {
+        const alias = this.aliasValue(value);
+        if (!alias) {
+          throw new Error('Invalid empty LXNS alias');
+        }
+        aliases.push({
+          sourceMusicId: String(row.song_id),
+          musicIds: mapping.get(String(row.song_id)) ?? [],
+          alias,
+          normalizedAlias: this.normalizeAlias(alias),
+        });
+      }
+    }
+    if (!aliases.length) {
+      throw new Error('Empty LXNS alias snapshot');
+    }
+    const db = this.aliasModel.db.db;
+    if (!db) {
+      throw new Error('Alias database unavailable');
+    }
+    const runId = randomUUID().replaceAll('-', '');
+    const name = `music_aliases_lxns_candidate_${runId}`;
+    const candidate = db.collection(name);
+    const values = [
+      ...new Map(
+        aliases.map((a) => [`${a.sourceMusicId}\0${a.normalizedAlias}`, a]),
+      ).values(),
+    ];
+    let published = false;
+    try {
+      await candidate.insertMany(
+        values.map((a) => ({
+          ...a,
+          source: 'lxns',
+          syncRunId: runId,
+          syncedAt: new Date(),
+        })),
+      );
+      await candidate.createIndex(
+        { source: 1, sourceMusicId: 1, normalizedAlias: 1 },
+        { unique: true },
+      );
+      await candidate.createIndex({ musicIds: 1 });
+      signal?.throwIfAborted();
+      await candidate.rename('music_aliases_lxns', { dropTarget: true });
+      published = true;
+    } finally {
+      if (!published) {
+        await candidate.drop().catch(() => undefined);
+      }
+    }
+    return {
+      source: 'lxns' as const,
+      fetched: aliases.length,
+      stored: values.length,
+      unmapped: values.filter((a) => !a.musicIds.length).length,
+      removed: 0,
+    };
   }
 
   async findAll(): Promise<MusicAliasListResponse> {
-    const cacheKey = this.publicCacheKey();
-    const cached = await this.redis.getJson<MusicAliasListResponse>(cacheKey);
-    if (cached) {
-      return cached;
-    }
-
+    const catalog = await this.musicModel.find({ source: 'lxns' }).lean();
+    const currentIds = new Set(catalog.map((music) => music.id));
     const rows = await this.aliasModel
-      .find({ 'musicIds.0': { $exists: true } })
+      .find({ source: 'lxns', 'musicIds.0': { $exists: true } })
       .select({
         _id: 0,
         source: 1,
@@ -128,12 +198,18 @@ export class MusicAliasService {
     let revisionMs = 0;
 
     for (const row of rows) {
+      if (row.source !== 'lxns') {
+        continue;
+      }
       const syncedAt = new Date(row.syncedAt).getTime();
       if (Number.isFinite(syncedAt)) {
         revisionMs = Math.max(revisionMs, syncedAt);
       }
-      const priority = row.source === 'yuzuchan' ? 0 : 1;
+      const priority = 0;
       for (const musicId of row.musicIds) {
+        if (!currentIds.has(musicId)) {
+          continue;
+        }
         const aliases =
           grouped.get(musicId) ??
           new Map<string, { alias: string; priority: number }>();
@@ -157,9 +233,6 @@ export class MusicAliasService {
       revision: revisionMs ? new Date(revisionMs).toISOString() : null,
       aliases,
     };
-    await this.redis.setJson(cacheKey, response, {
-      ttlSeconds: PUBLIC_CACHE_TTL_SECONDS,
-    });
     return response;
   }
 
@@ -463,7 +536,7 @@ export class MusicAliasService {
   }
 
   private publicCacheKey(): string {
-    return this.redis.key('catalog:music-aliases:v1');
+    return this.redis.key('catalog:music-aliases:lxns:v2');
   }
 
   private errorMessage(error: unknown): string {

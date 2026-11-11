@@ -6,6 +6,7 @@ import type {
 
 import { prepareTargetProfile, requiredFriendCode } from "../common.ts";
 import { updateScore } from "./stages/update_score.ts";
+import { retainFriends } from "../../../../common/friend-policy.ts";
 
 export const updateScoreJobHandler: JobTypeHandler = {
   preflight: preflightClaimFriendship,
@@ -19,6 +20,19 @@ async function preflightClaimFriendship(
   const preparedCabinetFriendship = ["ready", "uncertain"].includes(
     ctx.job.cabinetFriendshipStatus ?? "",
   );
+  if (retainFriends() && ctx.job.cabinetFriendshipStatus === "not_required") {
+    if (await ctx.client.friends.isFriend(requiredFriendCode(ctx))) {
+      return "continue";
+    }
+    await ctx.fail(
+      "Game friendship is no longer present; restore friendship before updating",
+      {
+        errorCode: "cabinet_friendship_unconfirmed",
+        updatedAt: new Date(),
+      },
+    );
+    return "complete_delivery";
+  }
   if (
     ctx.job.routing?.assignmentMode !== "claim" &&
     !preparedCabinetFriendship

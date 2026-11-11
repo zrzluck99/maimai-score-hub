@@ -12,6 +12,7 @@ import { BotStatusService } from '../../bots/services/bot-status.service';
 import { UsersService } from '../../users/services/users.service';
 import { JobEntity } from '../schemas/job.schema';
 import { FRIENDSHIP_PROOF_MAX_AGE_MS } from './job.constants';
+import { retainFriends } from '../../../common/friend-policy';
 
 @Injectable()
 export class JobFriendshipService {
@@ -70,11 +71,70 @@ export class JobFriendshipService {
     botFriendCodes: string[];
     now: Date;
   }): Promise<string | null> {
+    if (retainFriends()) {
+      // Persisted snapshots select the bot after restarts; the worker verifies
+      // the live relationship before scraping and does not treat it as proof.
+      const selected = await this.botFriendSnapshot.findBotHavingFriend(
+        input.friendCode,
+        input.botFriendCodes,
+      );
+      if (selected) {
+        return selected;
+      }
+      const allBots = await this.botStatus.getAll();
+      const unavailable = await this.botFriendSnapshot.findBotHavingFriend(
+        input.friendCode,
+        allBots
+          .map((bot) => bot.friendCode)
+          .filter((code) => !input.botFriendCodes.includes(code)),
+      );
+      if (unavailable) {
+        throw new BadRequestException({
+          code: 'friend_bot_unavailable',
+          message:
+            'Existing friend bot is offline or not eligible; binding is retained',
+        });
+      }
+      return null;
+    }
     return this.botFriendSnapshot.findFreshBotHavingFriend(
       input.friendCode,
       input.botFriendCodes,
       new Date(input.now.getTime() - 5 * 60_000),
     );
+  }
+
+  async hasRetainedFriend(
+    botFriendCode: string,
+    friendCode: string,
+  ): Promise<boolean> {
+    return (
+      retainFriends() &&
+      this.botFriendSnapshot.hasFriend(botFriendCode, friendCode)
+    );
+  }
+
+  async resolveRetainedPendingBot(
+    friendCode: string,
+    botFriendCodes: string[],
+  ): Promise<string | null> {
+    if (!retainFriends() || botFriendCodes.length === 0) {
+      return null;
+    }
+    // A historical request is only a routing hint. The worker checks the live
+    // request and capacity before any send; it is never a score-access proof.
+    const pending = await this.jobModel
+      .findOne({
+        friendCode,
+        botUserFriendCode: { $in: botFriendCodes },
+        jobType: 'send_friend_request',
+        stage: 'wait_acceptance',
+        friendRequestSentAt: { $ne: null },
+      })
+      .sort({ updatedAt: -1 })
+      .lean<JobEntity | null>()
+      .exec();
+    return pending?.botUserFriendCode ?? null;
   }
 
   async getTargetCabinetUserId(friendCode: string): Promise<number | null> {

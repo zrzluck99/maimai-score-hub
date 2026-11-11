@@ -1,4 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import type { Model } from 'mongoose';
+import { MusicEntity } from '../../music/schemas/music.schema';
 
 import {
   buildDivingFishDocs,
@@ -15,7 +18,6 @@ import { observeFetch } from '../../../common/observability/external-call-record
 
 const DIVING_FISH_MUSIC_URL =
   'https://www.diving-fish.com/api/maimaidxprober/music_data';
-const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 export type ProberExportMap = {
   toDivingFishId: Map<string, string>;
   toLxnsId: Map<string, string>;
@@ -25,29 +27,51 @@ export type ProberExportMap = {
 @Injectable()
 export class ProberExportMapService {
   private readonly logger = new Logger(ProberExportMapService.name);
-  private cache: { value: ProberExportMap; expiresAt: number } | null = null;
+
+  constructor(
+    @InjectModel(MusicEntity.name)
+    private readonly musicModel: Model<MusicEntity>,
+  ) {}
   private buildInFlight: Promise<ProberExportMap> | null = null;
 
   async getMap(): Promise<ProberExportMap> {
-    const now = Date.now();
-    if (this.cache && this.cache.expiresAt > now) {
-      return this.cache.value;
-    }
-
     if (!this.buildInFlight) {
-      this.buildInFlight = this.buildMap()
-        .then((value) => {
-          this.cache = { value, expiresAt: Date.now() + CACHE_TTL_MS };
-          return value;
-        })
-        .finally(() => {
-          this.buildInFlight = null;
-        });
+      this.buildInFlight = this.buildMap().finally(() => {
+        this.buildInFlight = null;
+      });
     }
     return this.buildInFlight;
   }
 
   private async buildMap(): Promise<ProberExportMap> {
+    const rows = await this.musicModel.find({ source: 'lxns' }).lean();
+    if (!rows.length) {
+      throw new Error('Verified LXNS catalog is not initialized');
+    }
+    const toLxnsId = new Map<string, string>();
+    const toDivingFishId = new Map<string, string>();
+    const divingFishTitleByDbId = new Map<string, string>();
+    for (const row of rows) {
+      if (!Number.isSafeInteger(row.sourceSongId)) {
+        continue;
+      }
+      toLxnsId.set(row.id, String(row.sourceSongId));
+      // Normal SD/DX protocol IDs are the existing local encoding. Utage is not guessed.
+      const expected =
+        row.type === 'dx' ? row.sourceSongId + 10000 : row.sourceSongId;
+      if (
+        row.type !== 'utage' &&
+        row.sourceSongId < 10000 &&
+        String(expected) === row.id
+      ) {
+        toDivingFishId.set(row.id, row.id);
+        divingFishTitleByDbId.set(row.id, row.title);
+      }
+    }
+    return { toLxnsId, toDivingFishId, divingFishTitleByDbId };
+  }
+
+  private async buildLegacyMap(): Promise<ProberExportMap> {
     this.logger.log('Building prober export map for diving-fish data source');
 
     const [dfRaw, lxnsRaw] = await Promise.all([

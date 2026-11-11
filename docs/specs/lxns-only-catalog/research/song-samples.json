@@ -1,0 +1,500 @@
+{
+  "source": "https://maimai.lxns.net/api/v0/maimai/song/list?version=25500&notes=true",
+  "songs": [
+    {
+      "id": 30,
+      "title": "ネコ日和。",
+      "artist": "Kai/能登有沙",
+      "genre": "maimai",
+      "bpm": 171,
+      "version": 10000,
+      "release_date": "2019-12-05",
+      "difficulties": {
+        "standard": [
+          {
+            "type": "standard",
+            "difficulty": 0,
+            "level": "6",
+            "level_value": 6,
+            "note_designer": "-",
+            "version": 10000,
+            "release_date": "2019-12-05",
+            "notes": {
+              "total": 177,
+              "tap": 162,
+              "hold": 4,
+              "slide": 7,
+              "touch": 0,
+              "break": 4
+            }
+          },
+          {
+            "type": "standard",
+            "difficulty": 1,
+            "level": "7+",
+            "level_value": 7.9,
+            "note_designer": "-",
+            "version": 10000,
+            "release_date": "2019-12-05",
+            "notes": {
+              "total": 241,
+              "tap": 210,
+              "hold": 23,
+              "slide": 4,
+              "touch": 0,
+              "break": 4
+            }
+          },
+          {
+            "type": "standard",
+            "difficulty": 2,
+            "level": "8+",
+            "level_value": 8.8,
+            "note_designer": "譜面-100号",
+            "version": 10000,
+            "release_date": "2019-12-05",
+            "notes": {
+              "total": 281,
+              "tap": 259,
+              "hold": 4,
+              "slide": 10,
+              "touch": 0,
+              "break": 8
+            }
+          },
+          {
+            "type": "standard",
+            "difficulty": 3,
+            "level": "12+",
+            "level_value": 12.6,
+            "note_designer": "ニャイン",
+            "version": 10000,
+            "release_date": "2019-12-05",
+            "notes": {
+              "total": 346,
+              "tap": 283,
+              "hold": 36,
+              "slide": 11,
+              "touch": 0,
+              "break": 16
+            }
+          }
+        ],
+        "dx": [
+          {
+            "type": "dx",
+            "difficulty": 0,
+            "level": "2",
+            "level_value": 2,
+            "note_designer": "",
+            "version": 25500,
+            "release_date": "2026-06-10",
+            "locked": true,
+            "notes": {
+              "total": 126,
+              "tap": 97,
+              "hold": 11,
+              "slide": 6,
+              "touch": 4,
+              "break": 8
+            }
+          },
+          {
+            "type": "dx",
+            "difficulty": 1,
+            "level": "6",
+            "level_value": 6.5,
+            "note_designer": "",
+            "version": 25500,
+            "release_date": "2026-06-10",
+            "locked": true,
+            "notes": {
+              "total": 218,
+              "tap": 162,
+              "hold": 12,
+              "slide": 6,
+              "touch": 28,
+              "break": 10
+            }
+          },
+          {
+            "type": "dx",
+            "difficulty": 2,
+            "level": "9",
+            "level_value": 9.5,
+            "note_designer": "Luxizhel",
+            "version": 25500,
+            "release_date": "2026-06-10",
+            "locked": true,
+            "notes": {
+              "total": 319,
+              "tap": 216,
+              "hold": 38,
+              "slide": 14,
+              "touch": 21,
+              "break": 30
+            }
+          },
+          {
+            "type": "dx",
+            "difficulty": 3,
+            "level": "13+",
+            "level_value": 13.7,
+            "note_designer": "サファ太",
+            "version": 25500,
+            "release_date": "2026-06-10",
+            "locked": true,
+            "notes": {
+              "total": 631,
+              "tap": 417,
+              "hold": 8,
+              "slide": 91,
+              "touch": 41,
+              "break": 74
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 1639,
+      "title": "Burn My Soul",
+      "artist": "She is Legend",
+      "genre": "POPSアニメ",
+      "bpm": 180,
+      "map": "ヘブンバーンズレッド区域",
+      "version": 24006,
+      "release_date": "2025-03-05",
+      "rights": "©WFS Developed by WRIGHT FLYER STUDIOS ©VISUAL ARTS/Key",
+      "disabled": true,
+      "difficulties": {
+        "standard": [],
+        "dx": [
+          {
+            "type": "dx",
+            "difficulty": 0,
+            "level": "4",
+            "level_value": 4,
+            "note_designer": "",
+            "version": 24006,
+            "release_date": "2025-03-05",
+            "notes": {
+              "total": 218,
+              "tap": 184,
+              "hold": 14,
+              "slide": 4,
+              "touch": 14,
+              "break": 2
+            }
+          },
+          {
+            "type": "dx",
+            "difficulty": 1,
+            "level": "7+",
+            "level_value": 7.8,
+            "note_designer": "",
+            "version": 24006,
+            "release_date": "2025-03-05",
+            "notes": {
+              "total": 366,
+              "tap": 294,
+              "hold": 23,
+              "slide": 9,
+              "touch": 30,
+              "break": 10
+            }
+          },
+          {
+            "type": "dx",
+            "difficulty": 2,
+            "level": "10",
+            "level_value": 10.5,
+            "note_designer": "はっぴー",
+            "version": 24006,
+            "release_date": "2025-03-05",
+            "notes": {
+              "total": 583,
+              "tap": 440,
+              "hold": 42,
+              "slide": 47,
+              "touch": 25,
+              "break": 29
+            }
+          },
+          {
+            "type": "dx",
+            "difficulty": 3,
+            "level": "12+",
+            "level_value": 12.8,
+            "note_designer": "はっぴー",
+            "version": 24006,
+            "release_date": "2025-03-05",
+            "notes": {
+              "total": 807,
+              "tap": 569,
+              "hold": 16,
+              "slide": 144,
+              "touch": 20,
+              "break": 58
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 100018,
+      "title": "[協]Love You",
+      "artist": "Q;indivi [cover]",
+      "genre": "宴会場",
+      "bpm": 135,
+      "version": 24000,
+      "release_date": "2024-06-06",
+      "difficulties": {
+        "standard": [],
+        "dx": [],
+        "utage": [
+          {
+            "type": "utage",
+            "difficulty": 0,
+            "level": "12?",
+            "level_value": 0,
+            "note_designer": "",
+            "version": 24000,
+            "release_date": "2024-06-06",
+            "kanji": "協",
+            "description": "LET'S PARTY!!",
+            "is_buddy": false,
+            "notes": {
+              "total": 348,
+              "tap": 268,
+              "hold": 44,
+              "slide": 30,
+              "touch": 0,
+              "break": 6
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 100022,
+      "title": "[蔵]In Chaos",
+      "artist": "Hiro「Crackin’DJ」",
+      "genre": "宴会場",
+      "bpm": 140,
+      "version": 24010,
+      "release_date": "2024-12-04",
+      "difficulties": {
+        "standard": [],
+        "dx": [],
+        "utage": [
+          {
+            "type": "utage",
+            "difficulty": 0,
+            "level": "14+?",
+            "level_value": 0,
+            "note_designer": "",
+            "version": 24010,
+            "release_date": "2024-12-04",
+            "kanji": "蔵",
+            "description": "LET'S PARTY!",
+            "is_buddy": false,
+            "notes": {
+              "total": 943,
+              "tap": 824,
+              "hold": 0,
+              "slide": 110,
+              "touch": 0,
+              "break": 9
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 110281,
+      "title": "[回]ダブルラリアット",
+      "artist": "アゴアニキ",
+      "genre": "宴会場",
+      "bpm": 138,
+      "version": 25000,
+      "release_date": "2026-01-23",
+      "rights": "© Crypton Future Media, INC. www.piapro.net (+piapro logo)",
+      "difficulties": {
+        "standard": [],
+        "dx": [],
+        "utage": [
+          {
+            "type": "utage",
+            "difficulty": 0,
+            "level": "13?",
+            "level_value": 0,
+            "note_designer": "",
+            "version": 25000,
+            "release_date": "2026-01-23",
+            "kanji": "回",
+            "description": "LET'S PARTY!!",
+            "is_buddy": true,
+            "notes": {
+              "left": {
+                "total": 653,
+                "tap": 557,
+                "hold": 20,
+                "slide": 55,
+                "touch": 0,
+                "break": 21
+              },
+              "right": {
+                "total": 653,
+                "tap": 557,
+                "hold": 20,
+                "slide": 55,
+                "touch": 0,
+                "break": 21
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "genres": [
+    {
+      "id": 101,
+      "title": "流行&动漫",
+      "genre": "POPSアニメ"
+    },
+    {
+      "id": 102,
+      "title": "niconico＆VOCALOID™",
+      "genre": "niconicoボーカロイド"
+    },
+    {
+      "id": 103,
+      "title": "东方Project",
+      "genre": "東方Project"
+    },
+    {
+      "id": 104,
+      "title": "其他游戏",
+      "genre": "ゲームバラエティ"
+    },
+    {
+      "id": 105,
+      "title": "舞萌",
+      "genre": "maimai"
+    },
+    {
+      "id": 106,
+      "title": "音击/中二节奏",
+      "genre": "オンゲキCHUNITHM"
+    },
+    {
+      "id": 107,
+      "title": "宴会場",
+      "genre": "宴会場"
+    }
+  ],
+  "versions": [
+    {
+      "id": 0,
+      "title": "maimai",
+      "version": 10000
+    },
+    {
+      "id": 1,
+      "title": "maimai PLUS",
+      "version": 11000
+    },
+    {
+      "id": 2,
+      "title": "GreeN",
+      "version": 12000
+    },
+    {
+      "id": 3,
+      "title": "GreeN PLUS",
+      "version": 13000
+    },
+    {
+      "id": 4,
+      "title": "ORANGE",
+      "version": 14000
+    },
+    {
+      "id": 5,
+      "title": "ORANGE PLUS",
+      "version": 15000
+    },
+    {
+      "id": 6,
+      "title": "PiNK",
+      "version": 16000
+    },
+    {
+      "id": 7,
+      "title": "PiNK PLUS",
+      "version": 17000
+    },
+    {
+      "id": 8,
+      "title": "MURASAKi",
+      "version": 18000
+    },
+    {
+      "id": 9,
+      "title": "MURASAKi PLUS",
+      "version": 18500
+    },
+    {
+      "id": 10,
+      "title": "MiLK",
+      "version": 19000
+    },
+    {
+      "id": 11,
+      "title": "MiLK PLUS",
+      "version": 19500
+    },
+    {
+      "id": 12,
+      "title": "FiNALE",
+      "version": 19900
+    },
+    {
+      "id": 13,
+      "title": "舞萌DX",
+      "version": 20000
+    },
+    {
+      "id": 15,
+      "title": "舞萌DX 2021",
+      "version": 21000
+    },
+    {
+      "id": 17,
+      "title": "舞萌DX 2022",
+      "version": 22000
+    },
+    {
+      "id": 19,
+      "title": "舞萌DX 2023",
+      "version": 23000
+    },
+    {
+      "id": 21,
+      "title": "舞萌DX 2024",
+      "version": 24000
+    },
+    {
+      "id": 23,
+      "title": "舞萌DX 2025",
+      "version": 25000
+    },
+    {
+      "id": 24,
+      "title": "舞萌DX 2026",
+      "version": 25500
+    }
+  ]
+}

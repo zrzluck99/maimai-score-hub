@@ -1,6 +1,7 @@
 import type { AcceptFriendRequest } from "../../../../../common/types.ts";
 import type { JobExecutionContext } from "../../index.ts";
 import { acceptRequest } from "./accept_request.ts";
+import { retainFriends } from "../../../../../common/friend-policy.ts";
 
 function getFriendRequestWaitStartedAt(ctx: JobExecutionContext): Date {
   const source = ctx.job.friendRequestWaitStartedAt
@@ -69,6 +70,27 @@ async function blockStaleUserRequests(
 export async function waitForUserRequest(
   ctx: JobExecutionContext,
 ): Promise<void> {
+  if (retainFriends()) {
+    if (await ctx.client.friends.isFriendBySearchPage(ctx.job.friendCode)) {
+      await ctx.completeJob();
+      return;
+    }
+    if (await ctx.client.friends.hasReceivedFriendRequest(ctx.job.friendCode)) {
+      await ctx.transitionTo("accept_request");
+      await acceptRequest(ctx);
+      return;
+    }
+    if (
+      Date.now() - getFriendRequestWaitStartedAt(ctx).getTime() >
+      5 * 60_000
+    ) {
+      throw new Error(
+        "Waiting for friend request timed out; existing requests are retained",
+      );
+    }
+    await ctx.delay(30_000, { stage: "wait_user_request" });
+    return;
+  }
   console.log(
     `[JobHandler] Job ${ctx.job.id}: Verifying user friend request...`,
   );

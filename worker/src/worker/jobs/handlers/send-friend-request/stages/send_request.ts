@@ -1,5 +1,6 @@
 import type { JobExecutionContext } from "../../index.ts";
 import { runInBatch } from "../../../../../common/maimai/infra/request-runtime.ts";
+import { retainFriends } from "../../../../../common/friend-policy.ts";
 
 type RetrySendResult =
   | { kind: "already-friend" }
@@ -63,6 +64,10 @@ async function retrySendAndVerifyRequest(
 }
 
 export async function sendRequest(ctx: JobExecutionContext): Promise<void> {
+  if (retainFriends()) {
+    await sendRetainedRequest(ctx);
+    return;
+  }
   console.log(`[JobHandler] Job ${ctx.job.id}: Sending friend request...`);
 
   let requestSent = await sendAndVerifyRecentRequest(ctx);
@@ -90,5 +95,50 @@ export async function sendRequest(ctx: JobExecutionContext): Promise<void> {
   await ctx.transitionTo("wait_acceptance", {
     friendRequestSentAt: waitAcceptanceStartedAt.toISOString(),
     updatedAt: waitAcceptanceStartedAt,
+  });
+}
+
+async function sendRetainedRequest(ctx: JobExecutionContext): Promise<void> {
+  const friends = ctx.client.friends;
+  const code = ctx.job.friendCode;
+  if (await friends.isFriendBySearchPage(code)) {
+    await ctx.completeJob();
+    return;
+  }
+  if (!(await friends.hasSentFriendRequest(code))) {
+    const current = await friends.getFriendList();
+    if (current.some((friend) => friend.friendCode === code)) {
+      await ctx.completeJob();
+      return;
+    }
+    if (current.length >= 50) {
+      throw new Error(
+        "FRIEND_CAPACITY_EXHAUSTED: no capacity for a new friend",
+      );
+    }
+    if (await friends.hasReceivedFriendRequest(code)) {
+      await friends.allowFriendRequest(code);
+      if (await friends.isFriendBySearchPage(code)) {
+        await ctx.completeJob();
+        return;
+      }
+    } else if (!(await sendAndVerifyRecentRequest(ctx))) {
+      // A lost response may still mean success. Reconcile without deleting or
+      // sending a second request in the same attempt.
+      if (await friends.isFriendBySearchPage(code)) {
+        await ctx.completeJob();
+        return;
+      }
+      if (!(await friends.hasSentFriendRequest(code))) {
+        throw new Error(
+          "FRIEND_REQUEST_UNCONFIRMED: retry after checking request state",
+        );
+      }
+    }
+  }
+  const now = new Date();
+  await ctx.transitionTo("wait_acceptance", {
+    friendRequestSentAt: ctx.job.friendRequestSentAt ?? now.toISOString(),
+    updatedAt: now,
   });
 }

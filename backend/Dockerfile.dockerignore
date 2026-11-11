@@ -1,0 +1,27 @@
+# Build context is the repository root. Keep local secrets and runtime data out.
+**/node_modules
+**/.env
+**/.env.*
+**/*.log
+**/coverage
+**/dist
+.git
+.github
+.local-dev
+.reference-asdfbot
+docs
+frontend
+admin
+android-app
+automation
+ocr-api
+worker
+deploy
+e2e
+backend/covers
+backend/android-releases
+backend/score-exports
+backend/test
+**/AGENTS.md
+**/CLAUDE.md
+**/.mcp.json

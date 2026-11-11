@@ -4,7 +4,7 @@ import type { HydratedDocument } from 'mongoose';
 export const MUSIC_ALIAS_SOURCES = ['yuzuchan', 'lxns'] as const;
 export type MusicAliasSource = (typeof MUSIC_ALIAS_SOURCES)[number];
 
-@Schema({ collection: 'music_aliases', timestamps: true })
+@Schema({ collection: 'music_aliases_lxns', timestamps: true })
 export class MusicAliasEntity {
   @Prop({ type: String, required: true, enum: MUSIC_ALIAS_SOURCES })
   source!: MusicAliasSource;

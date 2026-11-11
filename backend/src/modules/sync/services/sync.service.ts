@@ -1,3 +1,7 @@
+import {
+  catalogB50,
+  projectCatalogRating,
+} from '../../../common/prober/lxns/catalog-rating';
 /* eslint-disable max-lines */
 import {
   BadRequestException,
@@ -24,11 +28,7 @@ import {
   type ScoreChangeValue,
 } from '../schemas/score-change.schema';
 import type { ScoreChangeDocument } from '../schemas/score-change.schema';
-import {
-  buildB50RatingSummary,
-  getRating,
-  normalizeAchievement,
-} from '../../../common/rating';
+import { getRating, normalizeAchievement } from '../../../common/rating';
 import { convertSyncScoresToDivingFishRecords } from '../../../common/prober/diving-fish/converter';
 import { uploadRecords as uploadDivingFishRecords } from '../../../common/prober/diving-fish/api';
 import { convertSyncScoresToLxnsPayload } from '../../../common/prober/lxns/converter';
@@ -522,13 +522,8 @@ export class SyncService {
   private async refreshProfileRating(sync: CurrentSync): Promise<void> {
     // Read current IDs directly: the score-import metadata cache can still
     // contain a song removed by a recent catalog sync.
-    const musics = await this.musicModel
-      .find({}, { id: 1, _id: 0 })
-      .lean<Array<{ id: string }>>();
-    const summary = buildB50RatingSummary(
-      sync.scores ?? [],
-      new Set(musics.map((music) => music.id)),
-    );
+    const musics = await this.musicModel.find().lean<MusicRow[]>();
+    const summary = catalogB50(sync.scores ?? [], musics);
     await this.users.updateProfileRatingFromScores({
       friendCode: sync.friendCode,
       rating: Math.round(summary.totalSum),
@@ -545,15 +540,15 @@ export class SyncService {
       throw new NotFoundException('No sync found');
     }
 
-    const scores = (Array.isArray(sync.scores) ? sync.scores : []).map(
-      (score) => ({
-        ...score,
-        cid:
-          score.musicId +
-          '_' +
-          (score.chartIndex === 10 ? 0 : score.chartIndex),
-      }),
-    );
+    const catalog = await this.musicModel.find().lean<MusicRow[]>();
+    const scores = projectCatalogRating(
+      Array.isArray(sync.scores) ? sync.scores : [],
+      catalog,
+    ).map((score) => ({
+      ...score,
+      cid:
+        score.musicId + '_' + (score.chartIndex === 10 ? 0 : score.chartIndex),
+    }));
 
     return {
       id: sync.id,
@@ -822,9 +817,6 @@ export class SyncService {
 
   private async getMusicCache(): Promise<MusicCache> {
     const now = Date.now();
-    if (this.musicCache && now - this.musicCache.at < 5 * 60 * 1000) {
-      return this.musicCache;
-    }
 
     const rows = (await this.musicModel.find().lean()) as MusicRow[];
     const byId = new Map<string, MusicRow>();
@@ -836,7 +828,11 @@ export class SyncService {
     for (const m of rows) {
       byId.set(String(m.id), m);
       const categoryKey = m.category ?? '';
-      byTitleKey.set(`${categoryKey}::${m.title}::${m.type}`, m);
+      const key = `${categoryKey}::${m.title}::${m.type}`;
+      if (byTitleKey.has(key)) {
+        throw new Error(`Ambiguous catalog title: ${key}`);
+      }
+      byTitleKey.set(key, m);
       if (Array.isArray(m.charts)) {
         m.charts.forEach((chart, index) => {
           if (chart?.cid) {
@@ -937,17 +933,31 @@ export class SyncService {
       `${row.category || ''}::${resolvedTitle}::${row.type}`,
     );
     if (!music) {
-      this.logger.warn(
-        `No music found for score: category="${row.category}", type="${row.type}", title="${resolvedTitle}, key="${row.category || ''}::${resolvedTitle}::${row.type}"`,
+      // DX NET can list unplayed variants absent from the catalog. They carry
+      // no observation to import; never guess a match by removing title suffixes.
+      if (
+        Object.values(fields).every(
+          (value) => value === null || value === undefined,
+        )
+      ) {
+        return null;
+      }
+      throw new Error(
+        `CATALOG_REFERENCE_MISSING: ${row.category}::${resolvedTitle}::${row.type}`,
       );
-      return null;
     }
     const chart = this.resolveChartForIndex(music, row.chartIndex);
     if (!chart?.cid) {
-      this.logger.warn(
-        `No chart found for score: category="${row.category}", type="${row.type}", title="${row.title}", chartIndex=${row.chartIndex}`,
+      if (
+        Object.values(fields).every(
+          (value) => value === null || value === undefined,
+        )
+      ) {
+        return null;
+      }
+      throw new Error(
+        `CATALOG_REFERENCE_MISSING: ${music.id}_${row.chartIndex}`,
       );
-      return null;
     }
     return this.buildScoreObservation(row, music, chart, fields);
   }
@@ -968,8 +978,7 @@ export class SyncService {
     }
     const reference = byCid.get(row.musicId);
     if (!reference) {
-      this.logger.warn(`No chart found for targeted score: ${row.musicId}`);
-      return null;
+      throw new Error(`CATALOG_REFERENCE_MISSING: ${row.musicId}`);
     }
     const fields = observedVsFields(row);
     if (Object.values(fields).every((value) => value === undefined)) {

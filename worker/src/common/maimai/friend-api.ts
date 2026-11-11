@@ -1,3 +1,4 @@
+import { assertFriendRemovalAllowed, retainFriends } from "../friend-policy.ts";
 /**
  * 舞萌好友相关页面 API。
  */
@@ -51,8 +52,16 @@ export class MaimaiFriendApi {
     const firstText = firstPage.body;
     const friends = parseFriendList(firstText);
     const friendCount = parseFriendCount(firstText);
+    if (retainFriends() && friendCount === null) {
+      throw new Error(
+        "FRIEND_SNAPSHOT_UNKNOWN: cannot establish friend capacity",
+      );
+    }
 
     if (friendCount === null || friendCount <= 10) {
+      if (retainFriends() && friends.length !== friendCount) {
+        throw new Error("FRIEND_SNAPSHOT_UNKNOWN: incomplete friend list");
+      }
       console.log(
         `[MaimaiClient] Done get friend list (single page), count=${friends.length}`,
       );
@@ -91,6 +100,9 @@ export class MaimaiFriendApi {
       `[MaimaiClient] Done get friend list (${totalPages} pages), count=${uniqueFriends.length}`,
     );
     if (totalPages === naturalTotalPages) {
+      if (retainFriends() && uniqueFriends.length !== friendCount) {
+        throw new Error("FRIEND_SNAPSHOT_UNKNOWN: incomplete friend list");
+      }
       this.recordFriendList(uniqueFriends);
     }
     return uniqueFriends;
@@ -189,6 +201,11 @@ export class MaimaiFriendApi {
   }
 
   async sendFriendRequest(friendCode: string): Promise<void> {
+    if (retainFriends()) {
+      if (await this.isFriendBySearchPage(friendCode)) return;
+      if (await this.hasSentFriendRequest(friendCode)) return;
+      await this.assertNewFriendCapacity(friendCode);
+    }
     console.log(
       `[MaimaiClient] Start send friend request, friend code ${friendCode}`,
     );
@@ -207,6 +224,7 @@ export class MaimaiFriendApi {
   }
 
   async allowFriendRequest(friendCode: string): Promise<void> {
+    if (retainFriends()) await this.assertNewFriendCapacity(friendCode);
     console.log(
       `[MaimaiClient] Start allow friend request, friend code ${friendCode}`,
     );
@@ -226,6 +244,7 @@ export class MaimaiFriendApi {
   }
 
   async blockFriendRequest(friendCode: string): Promise<void> {
+    assertFriendRemovalAllowed();
     console.log(
       `[MaimaiClient] Start block friend request, friend code ${friendCode}`,
     );
@@ -244,6 +263,7 @@ export class MaimaiFriendApi {
   }
 
   async cancelFriendRequest(friendCode: string): Promise<void> {
+    assertFriendRemovalAllowed();
     console.log(
       `[MaimaiClient] Start cancel friend request, friend code ${friendCode}`,
     );
@@ -258,6 +278,7 @@ export class MaimaiFriendApi {
   }
 
   async removeFriend(friendCode: string): Promise<void> {
+    assertFriendRemovalAllowed();
     console.log(
       `[MaimaiClient] Start remove friend, friend code ${friendCode}`,
     );
@@ -274,6 +295,7 @@ export class MaimaiFriendApi {
    * 清理与指定用户的好友关系，包括取消待处理请求、拒绝待接受请求和删除好友。
    */
   async cleanUpFriend(friendCode: string): Promise<void> {
+    assertFriendRemovalAllowed();
     const existing = MaimaiFriendApi.cleanUpPromises.get(friendCode);
     if (existing) {
       return existing;
@@ -341,6 +363,16 @@ export class MaimaiFriendApi {
           throw e;
         }
       }
+    }
+  }
+
+  private async assertNewFriendCapacity(friendCode: string): Promise<void> {
+    const friends = await this.getFriendList();
+    if (friends.some((friend) => friend.friendCode === friendCode)) return;
+    if (friends.length >= 50) {
+      throw new Error(
+        "FRIEND_CAPACITY_EXHAUSTED: no capacity for a new friend",
+      );
     }
   }
 }
